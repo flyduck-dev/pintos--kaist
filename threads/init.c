@@ -79,7 +79,7 @@ main (void) {
 
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
-	thread_init ();
+	thread_init (); //🐲
 	console_init ();
 
 	/* Initialize memory system. */
@@ -102,7 +102,7 @@ main (void) {
 	syscall_init ();
 #endif
 	/* Start thread scheduler and enable interrupts. */
-	thread_start ();
+	thread_start (); //🐲
 	serial_init_queue ();
 	timer_calibrate ();
 

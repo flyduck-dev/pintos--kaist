@@ -90,13 +90,13 @@ fail (const char *format, ...)
   va_end (args);
   putchar ('\n');
 
-  PANIC ("test failed");
+  PANIC ("테스트 실패!!! test failed");
 }
 
 /* Prints a message indicating the current test passed. */
 void
 pass (void) 
 {
-  printf ("(%s) PASS\n", test_name);
+  printf ("(%s) 테스트 통과!!! PASS\n", test_name);
 }
 
