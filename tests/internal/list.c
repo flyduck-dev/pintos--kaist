@@ -28,6 +28,8 @@ struct value
 static void shuffle (struct value[], size_t);
 static bool value_less (const struct list_elem *, const struct list_elem *,
                         void *);
+static bool value_more (const struct list_elem *, const struct list_elem *,
+                        void *); 
 static void verify_list_fwd (struct list *, int size);
 static void verify_list_bkwd (struct list *, int size);
 
@@ -133,6 +135,16 @@ value_less (const struct list_elem *a_, const struct list_elem *b_,
   const struct value *b = list_entry (b_, struct value, elem);
   
   return a->value < b->value;
+}
+
+static bool
+value_more (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED) 
+{
+  const struct value *a = list_entry (a_, struct value, elem);
+  const struct value *b = list_entry (b_, struct value, elem);
+  
+  return a->value > b->value;
 }
 
 /* Verifies that LIST contains the values 0...SIZE when traversed

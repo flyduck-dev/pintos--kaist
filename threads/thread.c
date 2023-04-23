@@ -257,7 +257,7 @@ void
 thread_unblock (struct thread *t) {
 	enum intr_level old_level;
 	old_level = intr_disable ();
-	ASSERT (t->status == THREAD_BLOCKED); //안됐다.
+	ASSERT (t->status == THREAD_BLOCKED);
 	list_push_back (&ready_list, &t->elem);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
