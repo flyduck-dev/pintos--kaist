@@ -97,6 +97,6 @@ fail (const char *format, ...)
 void
 pass (void) 
 {
-  printf ("(%s) 테스트 통과!!! PASS\n", test_name);
+  printf ("(%s) PASS\n", test_name);
 }
 

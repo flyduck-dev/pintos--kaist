@@ -258,7 +258,6 @@ thread_unblock (struct thread *t) {
 	enum intr_level old_level;
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED); //안됐다.
-	printf("ASSERT (t->status == THREAD_BLOCKED); 접근 성공");
 	list_push_back (&ready_list, &t->elem);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
@@ -300,7 +299,7 @@ thread_sleep (int64_t ticks) {
 void ///* Sleep queue에서 깨워야 할 thread를 찾아서 wake */
 void thread_awake (int64_t ticks) {
   struct list_elem *elem, *next;
-
+  
   for (elem = list_begin (&sleep_list); elem != list_end (&sleep_list); elem = next) {
     struct thread *t = list_entry (elem, struct thread, elem);
     next = list_next (elem);
@@ -308,6 +307,7 @@ void thread_awake (int64_t ticks) {
     if (t->wake_time <= ticks) {
       list_remove (elem);
       thread_unblock (t);
+	  next = list_begin (&sleep_list); // 수정된 부분
     }
   }
 }
