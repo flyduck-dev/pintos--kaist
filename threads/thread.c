@@ -263,6 +263,17 @@ thread_unblock (struct thread *t) {
 	intr_set_level (old_level);
 }
 
+bool less_func(const struct list_elem *a,
+               const struct list_elem *b,
+               void *aux UNUSED) {
+    struct thread *process_a = list_entry(a, struct thread, elem);
+    struct thread *process_b = list_entry(b, struct thread, elem);
+    // Compare the values of process_a and process_b.
+    // If process_a is less than process_b, return true.
+    // Otherwise, return false.
+    return (process_a->wake_time < process_b->wake_time);
+}
+
 void
 thread_sleep (int64_t ticks) {
 	enum intr_level old_level;
@@ -271,7 +282,8 @@ thread_sleep (int64_t ticks) {
 	struct thread *curr = thread_current ();
 	if (curr != idle_thread) {
 		curr -> wake_time = ticks; // 깨울시간 저장 (구조체를 깨울 시간 추가한 모양으로 변경)
-		list_push_back (&sleep_list, &curr->elem);
+		//list_push_back (&sleep_list, &curr->elem);
+		list_insert_ordered(&sleep_list,&curr->elem, less_func,NULL);
 	}
 	thread_block();
 	intr_set_level (old_level);
@@ -281,36 +293,34 @@ thread_sleep (int64_t ticks) {
 //스레드를 깨우는 작업을 수행합니다.
 //기존에 슬립 상태에 있는 스레드 목록을 순회하여, 해당 조건을 만족하는 스레드를 찾아야 합니다. 만약 조건을 만족하는 스레드를 찾으면,
 //스레드를 슬립 상태에서 깨우기 위해 list_remove() 함수를 호출하고, 스레드 상태를 THREAD_READY로 변경하여 ready_list에 추가합니다.
-// void ///* Sleep queue에서 깨워야 할 thread를 찾아서 wake */
-// thread_awake (int64_t ticks) {//ticks을 받아온다.
-
-// 	while (!list_empty(&sleep_list)) {
-//     	struct thread *t = list_entry (list_front (&sleep_list), struct thread, elem);
-//         if (t->wake_time > ticks) {
-//             break;
-//         }
-// 		struct thread *wakeup_thread = list_entry(list_pop_front(&sleep_list), struct thread, elem);
+ void ///* Sleep queue에서 깨워야 할 thread를 찾아서 wake */
+ thread_awake (int64_t ticks) {//ticks을 받아온다.
+ 	while (!list_empty(&sleep_list)) {
+     	struct thread *t = list_entry (list_front (&sleep_list), struct thread, elem);
+         if (t->wake_time > ticks) {
+             break;
+        }
+ 		struct thread *wakeup_thread = list_entry(list_pop_front(&sleep_list), struct thread, elem);
 // 		//wakeup_thread->status = THREAD_READY;
 // 		//list_push_back (&ready_list, &wakeup_thread->elem);
-// 		thread_unblock(wakeup_thread); // 이 함수를 부르면 옆과 같은 세팅이 된다 t->status == THREAD_BLOCKED
-// 	}
-// }
+ 		thread_unblock(wakeup_thread); // 이 함수를 부르면 옆과 같은 세팅이 된다 t->status == THREAD_BLOCKED
+ 	}
+}
 /*
 void ///* Sleep queue에서 깨워야 할 thread를 찾아서 wake */
-void thread_awake (int64_t ticks) {
-  struct list_elem *elem, *next;
-  
-  for (elem = list_begin (&sleep_list); elem != list_end (&sleep_list); elem = next) {
-    struct thread *t = list_entry (elem, struct thread, elem);
-    next = list_next (elem);
+//void thread_awake (int64_t ticks) {
+//  struct list_elem *elem, *next;
+// for (elem = list_begin (&sleep_list); elem != list_end (&sleep_list); elem = next) {
+//    struct thread *t = list_entry (elem, struct thread, elem);
+//    next = list_next (elem);
 
-    if (t->wake_time <= ticks) {
-      list_remove (elem);
-      thread_unblock (t);
-	  next = list_begin (&sleep_list); // 수정된 부분
-    }
-  }
-}
+//    if (t->wake_time <= ticks) {
+//      list_remove (elem);
+//      thread_unblock (t);
+//	  next = list_begin (&sleep_list); // 수정된 부분
+//    }
+//  }
+//}
 
 /* Returns the name of the running thread. */
 const char *
@@ -331,7 +341,6 @@ thread_current (void) {
 	   recursion can cause stack overflow. */
 	ASSERT (is_thread (t));
 	ASSERT (t->status == THREAD_RUNNING);
-
 	return t;
 }
 
