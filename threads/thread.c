@@ -378,7 +378,8 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_push_back (&ready_list, &curr->elem);
+		list_insert_ordered(&ready_list,&curr->elem, value_more,NULL);
+		//list_push_back (&ready_list, &curr->elem);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -664,4 +665,10 @@ allocate_tid (void) {
 	lock_release (&tid_lock);
 
 	return tid;
+}
+
+bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
+    const struct thread *va = list_entry(a, struct thread, elem);
+    const struct thread *vb = list_entry(b, struct thread, elem);
+    return va->priority > vb->priority;
 }
