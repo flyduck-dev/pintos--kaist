@@ -32,31 +32,33 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
-/* Initializes semaphore SEMA to VALUE.  A semaphore is a
-   nonnegative integer along with two atomic operators for
-   manipulating it:
+/* 세마포어(SEMA)를 VALUE로 초기화합니다. 세마포어는 양의 정수 값과 이를 조작하는 데 사용되는 두 개의 원자적 연산자를 가집니다:
 
-   - down or "P": wait for the value to become positive, then
-   decrement it.
+down 또는 "P": 값을 양수로 만들 때까지 기다린 다음 값을 감소시킵니다.
 
-   - up or "V": increment the value (and wake up one waiting
-   thread, if any). */
+up 또는 "V": 값을 증가시키고 (있는 경우) 대기 중인 스레드 중 하나를 깨웁니다. */
+
+//세마포어는 공유 자원에 대한 접근을 조율하기 위해 사용되는 동기화 기법 중 하나입니다.
+//down 연산은 세마포어 값을 감소시키며, 값이 0이면 자원에 접근할 수 없는 상태가 됩니다.
+//이때 다른 스레드는 세마포어 값이 양수가 될 때까지 기다립니다. up 연산은 세마포어 값을 증가시키며,
+//대기 중인 스레드 중 하나를 깨웁니다. 이를 통해 다른 스레드가 자원에 접근할 수 있도록 합니다.
 void
 sema_init (struct semaphore *sema, unsigned value) {
 	ASSERT (sema != NULL);
-
+	//waiters는 세마포어에서 기다리고 있는 스레드들의 연결 리스트입니다.
+	//이 리스트는 struct semaphore 구조체의 waiters 멤버로 선언되어 있습니다.
 	sema->value = value;
-	list_init (&sema->waiters);
+	list_init (&sema->waiters); // 세마포어(sema)가 가지고 있는 대기자(waiter) 리스트를 초기화
+	//세마포어가 가지고 있는 대기자 리스트를 초기화하는 것은, 세마포어를 초기화하면서 대기자 리스트를 빈 상태로 만들기 위함입니다.
 }
 
-/* Down or "P" operation on a semaphore.  Waits for SEMA's value
-   to become positive and then atomically decrements it.
+/* 세마포어(SEMA)에 대한 Down 또는 "P" 연산을 수행합니다. 이 함수는 SEMA의 값을 양수로 만들 때까지 기다린 다음 값을 원자적으로 감소시킵니다.
 
-   This function may sleep, so it must not be called within an
-   interrupt handler.  This function may be called with
-   interrupts disabled, but if it sleeps then the next scheduled
-   thread will probably turn interrupts back on. This is
-   sema_down function. */
+이 함수는 슬립할 수 있으므로 인터럽트 핸들러 내에서 호출해서는 안 됩니다. 인터럽트가 비활성화된 상태에서 이 함수를 호출할 수는 있지만, 슬립해야 하는 경우 다음 스케줄된 스레드에서는 인터럽트가 다시 활성화될 가능성이 높습니다. 이 함수는 sema_down 함수입니다. */
+//세마포어(sema)에 대한 down 연산(P 연산)을 수행하는 함수입니다.
+
+//down 연산은 세마포어 값을 감소시키고, 값이 0이면 자원에 접근할 수 없는 상태가 됩니다.
+//이 함수는 세마포어 값이 양수가 될 때까지 대기하며, 값을 원자적으로 감소시킵니다. 이 함수는 슬립할 수 있으므로 인터럽트 핸들러 내에서 호출해서는 안 됩니다. 인터럽트가 비활성화된 상태에서는 호출할 수 있지만, 이 함수가 슬립해야 하는 경우 다음 스케줄된 스레드에서는 인터럽트가 다시 활성화될 가능성이 높습니다.
 void
 sema_down (struct semaphore *sema) {
 	enum intr_level old_level;
@@ -174,14 +176,15 @@ lock_init (struct lock *lock) {
 	sema_init (&lock->semaphore, 1);
 }
 
-/* Acquires LOCK, sleeping until it becomes available if
-   necessary.  The lock must not already be held by the current
-   thread.
+/* LOCK을 획득합니다. LOCK이 이미 다른 스레드에 의해 점유되어 있는 경우, 이 함수는 LOCK이 사용 가능할 때까지 슬립 상태로 대기합니다.
 
-   This function may sleep, so it must not be called within an
-   interrupt handler.  This function may be called with
-   interrupts disabled, but interrupts will be turned back on if
-   we need to sleep. */
+이 함수는 슬립할 수 있으므로 인터럽트 핸들러 내에서 호출해서는 안 됩니다. 인터럽트가 비활성화된 상태에서 이 함수를 호출할 수는 있지만, 슬립해야 하는 경우 인터럽트가 다시 활성화됩니다. 
+
+위 코드는 잠금(lock)을 획득하는 함수입니다. lock은 공유 자원에 대한 동시 접근을 방지하기 위해 사용되는 동기화 기법 중 하나입니다.
+
+이 함수는 현재 스레드가 lock을 이미 소유하고 있지 않은 경우, lock을 획득하기 위해 대기할 수 있습니다. lock이 이미 다른 스레드에 의해 점유되어 있는 경우, 이 함수는 lock이 사용 가능할 때까지 슬립 상태로 대기합니다.
+
+이 함수는 슬립할 수 있으므로, 인터럽트 핸들러 내에서 호출해서는 안 됩니다. 인터럽트가 비활성화된 상태에서 이 함수를 호출할 수는 있지만, 슬립해야 하는 경우 인터럽트가 다시 활성화됩니다. /**/
 void
 lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);

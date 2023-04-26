@@ -97,6 +97,19 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
    It is not safe to call thread_current() until this function
    finishes. */
    //주석1 : 실행 대기열(run queue)과 스레드 식별자(tid) 락을 초기화
+/* thread/thread.c */
+bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
+    const struct thread *va = list_entry(a, struct thread, elem);
+    const struct thread *vb = list_entry(b, struct thread, elem);
+    return va->priority > vb->priority;
+}
+
+void compare_priority_ready_with_run(){
+	if (!list_empty(&ready_list)&& thread_current()->priority < 
+        list_entry(list_front(&ready_list), struct thread, elem)->priority)
+		thread_yield();
+}
+
 void
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF); //주석2 : 현재 인터럽트가 비활성화되어 있어야한다.
@@ -222,6 +235,7 @@ thread_create (const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock (t);
+	compare_priority_ready_with_run();
 
 	return tid;
 }
@@ -258,7 +272,7 @@ thread_unblock (struct thread *t) {
 	enum intr_level old_level;
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_push_back (&ready_list, &t->elem);
+	list_insert_ordered (&ready_list, &t->elem, value_more, 0);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -268,9 +282,6 @@ bool less_func(const struct list_elem *a,
                void *aux UNUSED) {
     struct thread *process_a = list_entry(a, struct thread, elem);
     struct thread *process_b = list_entry(b, struct thread, elem);
-    // Compare the values of process_a and process_b.
-    // If process_a is less than process_b, return true.
-    // Otherwise, return false.
     return (process_a->wake_time < process_b->wake_time);
 }
 
@@ -282,7 +293,6 @@ thread_sleep (int64_t ticks) {
 	struct thread *curr = thread_current ();
 	if (curr != idle_thread) {
 		curr -> wake_time = ticks; // 깨울시간 저장 (구조체를 깨울 시간 추가한 모양으로 변경)
-		//list_push_back (&sleep_list, &curr->elem);
 		list_insert_ordered(&sleep_list,&curr->elem, less_func,NULL);
 	}
 	thread_block();
@@ -305,6 +315,7 @@ thread_sleep (int64_t ticks) {
 // 		//list_push_back (&ready_list, &wakeup_thread->elem);
  		thread_unblock(wakeup_thread); // 이 함수를 부르면 옆과 같은 세팅이 된다 t->status == THREAD_BLOCKED
  	}
+	list_sort(&ready_list, value_more, NULL); // 내림차순 정렬
 }
 /*
 void ///* Sleep queue에서 깨워야 할 thread를 찾아서 wake */
@@ -379,7 +390,6 @@ thread_yield (void) {
 	old_level = intr_disable ();
 	if (curr != idle_thread)
 		list_insert_ordered(&ready_list,&curr->elem, value_more,NULL);
-		//list_push_back (&ready_list, &curr->elem);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -388,6 +398,7 @@ thread_yield (void) {
 void
 thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
+	compare_priority_ready_with_run();
 }
 
 /* Returns the current thread's priority. */
@@ -484,6 +495,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	t->origin_priority = priority;
 	t->magic = THREAD_MAGIC;
 }
 
@@ -665,10 +677,4 @@ allocate_tid (void) {
 	lock_release (&tid_lock);
 
 	return tid;
-}
-
-bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
-    const struct thread *va = list_entry(a, struct thread, elem);
-    const struct thread *vb = list_entry(b, struct thread, elem);
-    return va->priority > vb->priority;
 }

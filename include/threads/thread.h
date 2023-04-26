@@ -91,6 +91,7 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
+	int origin_priority;                       /* Origin - Priority. */
 	int64_t wake_time; 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
@@ -142,7 +143,9 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-void do_iret (struct intr_frame *tf);
 
+void do_iret (struct intr_frame *tf);
+bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+void compare_priority_ready_with_run();
+//compare_thread_priority
 #endif /* threads/thread.h */
