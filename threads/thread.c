@@ -496,6 +496,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->origin_priority = priority;
+	list_init (&t->donors);
 	t->magic = THREAD_MAGIC;
 }
 

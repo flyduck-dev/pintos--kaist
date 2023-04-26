@@ -92,7 +92,9 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 	int origin_priority;                       /* Origin - Priority. */
-	int64_t wake_time; 
+	int64_t wake_time;
+	struct list donors; //자신에게 priority 를 나누어준 스레드들의 리스트
+	struct lock *waitng_lock;
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -147,5 +149,6 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 void compare_priority_ready_with_run();
+void donate_priority (struct lock *lock);
 //compare_thread_priority
 #endif /* threads/thread.h */
