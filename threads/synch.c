@@ -32,6 +32,10 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+void donate_priority(struct lock *lock){
+	lock->holder->priority = thread_current()->priority;
+}
+
 /* 세마포어(SEMA)를 VALUE로 초기화합니다. 세마포어는 양의 정수 값과 이를 조작하는 데 사용되는 두 개의 원자적 연산자를 가집니다:
 
 down 또는 "P": 값을 양수로 만들 때까지 기다린 다음 값을 감소시킵니다.
@@ -68,7 +72,7 @@ sema_down (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	while (sema->value == 0) {
-		list_push_back (&sema->waiters, &thread_current ()->elem);
+		list_insert_ordered (&sema->waiters, &thread_current ()->elem, value_more, 0);
 		thread_block ();
 	}
 	sema->value--;
@@ -285,7 +289,7 @@ cond_wait (struct condition *cond, struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	sema_init (&waiter.semaphore, 0);
-	list_push_back (&cond->waiters, &waiter.elem);
+	list_insert_ordered (&cond->waiters, &waiter.elem, value_more, 0);
 	lock_release (lock);
 	sema_down (&waiter.semaphore);
 	lock_acquire (lock);
