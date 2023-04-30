@@ -39,7 +39,7 @@ process_init (void) {
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
 tid_t
-process_create_initd (const char *file_name) {
+process_create_initd (const char *file_name) { //command line의 전체가 매개변수로 들어옴
 	char *fn_copy;
 	tid_t tid;
 
@@ -48,10 +48,14 @@ process_create_initd (const char *file_name) {
 	fn_copy = palloc_get_page (0);
 	if (fn_copy == NULL)
 		return TID_ERROR;
-	strlcpy (fn_copy, file_name, PGSIZE);
+	strlcpy (fn_copy, file_name, PGSIZE); //file_name 문자열을 fn_copy 문자열에 복사
+	
+	char *save_ptr;
+
+	char *token = strtok_r(file_name, " ", &save_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy); //file_name 대가리만 넣어서 끝났다
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -161,7 +165,7 @@ error:
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
 int
-process_exec (void *f_name) {
+process_exec (void *f_name) { //대가리 only
 	char *file_name = f_name;
 	bool success;
 
@@ -172,6 +176,13 @@ process_exec (void *f_name) {
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
+
+	// 파일과 옵션을 분리하는 것이 1차과제 implement the argument passing
+	// 현재 실행중인 스레드의 context를 frame에 해당하는 명령어를 실행시키기 위해 context switch 하는 것이 해당 함수 역할
+	// 즉 이전에 돌고 있던 쓰레드를 context switch 해주기
+
+	// Initialize user stack
+	// set up argument at the user stack
 
 	/* We first kill the current context */
 	process_cleanup ();
