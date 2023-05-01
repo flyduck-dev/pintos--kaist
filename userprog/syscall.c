@@ -48,31 +48,61 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	    // 현재 실행 중인 쓰레드의 상태를 커널 스택에 저장
     //push(thread_current()->kernel_esp);
-    // switch (syscall_number){//넘버가 중요) {
-	// 	case SYS_HALT : //시스템을 종료
-	// 		halt();
-	// 		break;
-	// 	case SYS_WAIT:
-    //         thread_exit();
-    //         break;
-    //     case SYS_EXIT: //현재 실행 중인 프로세스를 종료
-    //         thread_exit();
-    //         break;
-	// 	case SYS_EXEC :
-	// 		exec();
-	// 		break;
-    //     case SYS_WRITE:
-    //         check_user_memory(arg2, arg3);
-    //         arg1 = get_kernel_address(arg1);
-    //         int bytes_written = write(arg1, arg2, arg3);
-    //         set_syscall_return_value(bytes_written);
-    //         break;
-    //     // 다른 시스템 콜 처리 작업
-    //     // ...
-    //     default:
-    //         printf("Unhandled system call!\n");
-    //         thread_exit();
-    // }
+    switch (syscall_number){
+        // case SYS_TELL : //1
+        //     create();
+        //     break;
+        // case SYS_CLOSE :  //1
+        //     create();
+        //     break;
+        // case SYS_READ :  //3
+        //     create();
+        //     break;
+        // case SYS_WRITE : //3
+        //     create();
+        //     break;
+        // case SYS_SEEK : 
+        //     create();
+        //     break;
+        // case SYS_OPEN : 
+        //     create();
+        //     break;
+        // case SYS_FILESIZE : 
+        //     create();
+        //     break;
+        // case SYS_REMOVE : 
+        //     create();
+        //     break;
+        // case SYS_CREATE : 
+        //    filesys_create();
+        //     break;
+        case SYS_FORK : //시스템을 종료
+			power_off(); //void
+			break;
+		case SYS_HALT : //시스템을 종료
+			halt();  //void
+			break;
+		case SYS_WAIT:
+            thread_exit((int)f->R.rdi);
+            break;
+        case SYS_EXIT: //현재 실행 중인 프로세스를 종료
+            exit((int)f->R.rdi);
+            break;
+		case SYS_EXEC :
+			exec(); //1
+			break;
+        // case SYS_WRITE:
+        //     check_user_memory(arg2, arg3);
+        //     arg1 = get_kernel_address(arg1);
+        //     int bytes_written = write(arg1, arg2, arg3);
+        //     set_syscall_return_value(bytes_written);
+        //     break;
+        // 다른 시스템 콜 처리 작업
+        // ...
+        default:
+            printf("Unhandled system call!\n");
+            thread_exit();
+    }
 
     // // 저장된 현재 쓰레드의 상태를 로드하여 다시 해당 쓰레드를 실행
     // thread_current()->kernel_esp = pop();

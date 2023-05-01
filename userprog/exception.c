@@ -158,3 +158,24 @@ page_fault (struct intr_frame *f) {
 	kill (f);
 }
 
+/* Check if user pointer is valid. */
+static bool is_valid_user_address(const void *ptr) {
+    if (ptr == NULL || ptr >= PHYS_BASE)
+        return false;
+    return pml4_get_page(thread_current()->pml4, ptr) != NULL;
+}
+
+/* Check if user buffer is valid. */
+static bool is_valid_user_buffer(const void *buffer, unsigned size) {
+    const char *p = (const char*) buffer;
+    for (unsigned i = 0; i < size; ++i)
+        if (!is_valid_user_address(p + i))
+            return false;
+    return true;
+}
+
+/* Check if address is in user memory. */
+static void check_address(const void *addr) {
+    if (!is_valid_user_address(addr))
+        syscall_exit(-1);
+}
