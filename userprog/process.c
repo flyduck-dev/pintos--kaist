@@ -166,6 +166,9 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
+ //수정 전,  부모 프로세스를 구분하지 않고 새로운 프로세스를 실행할 뿐
+ // 따라서, 부모 프로세스와의 관계를 설정하려면, 이 함수 외부에서 자식 프로세스를 생성하고,
+ //해당 자식 프로세스에 대한 정보를 부모 프로세스의 자식 리스트에 추가해야 한다.
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
@@ -198,7 +201,7 @@ process_exec (void *f_name) {
 		return -1;
 	}
 
-	hex_dump(_if.rsp, _if.rsp, KERN_BASE - _if.rsp, true);
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -356,6 +359,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	int argc = 0;
  
 	token = strtok_r(file_name, " ", &save_ptr); 
+
+	argv[argc++] = token;
 
 	while(token!=NULL){
 		token = strtok_r (NULL, " ", &save_ptr);

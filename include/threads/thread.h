@@ -95,7 +95,7 @@ struct thread {
 	int64_t wake_time; 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
-	struct semaphore child_wait_sema;
+	//struct semaphore child_wait_sema;
 	struct process *process;            /* Process the thread belongs to. */
 
 #ifdef USERPROG
