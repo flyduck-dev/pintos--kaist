@@ -38,9 +38,44 @@ syscall_init (void) {
 }
 
 /* The main system call interface */
+//유저 스택에 접근하기 위해서는, if_->rsp를 사용합니다. rsp는 "stack pointer"의 약자로, 현재 스택 프레임의 맨 위 주소를 가리키는 레지스터입니다. if_->rsp는 현재 스택 프레임에서 유저 스택의 맨 위 주소를 가리키게 됩니다. 따라서 이 코드에서 유저 스택에 데이터를 저장하거나 로드할 때는 if_->rsp를 사용하여 주소를 계산하면 됩니다.
+//f->rsp는 현재 스택 프레임에서 유저 스택의 맨 위 주소
+//유저 스택에 접근하기 위해서는 f->rsp를 사용하여 주소를 계산할 수 있습니다.
 void
 syscall_handler (struct intr_frame *f UNUSED) {
+	/* Get the system call number. */
+	int syscall_number = (int) f->R.rax;
 	// TODO: Your implementation goes here.
+	    // 현재 실행 중인 쓰레드의 상태를 커널 스택에 저장
+    //push(thread_current()->kernel_esp);
+    // switch (syscall_number){//넘버가 중요) {
+	// 	case SYS_HALT : //시스템을 종료
+	// 		halt();
+	// 		break;
+	// 	case SYS_WAIT:
+    //         thread_exit();
+    //         break;
+    //     case SYS_EXIT: //현재 실행 중인 프로세스를 종료
+    //         thread_exit();
+    //         break;
+	// 	case SYS_EXEC :
+	// 		exec();
+	// 		break;
+    //     case SYS_WRITE:
+    //         check_user_memory(arg2, arg3);
+    //         arg1 = get_kernel_address(arg1);
+    //         int bytes_written = write(arg1, arg2, arg3);
+    //         set_syscall_return_value(bytes_written);
+    //         break;
+    //     // 다른 시스템 콜 처리 작업
+    //     // ...
+    //     default:
+    //         printf("Unhandled system call!\n");
+    //         thread_exit();
+    // }
+
+    // // 저장된 현재 쓰레드의 상태를 로드하여 다시 해당 쓰레드를 실행
+    // thread_current()->kernel_esp = pop();
 	printf ("system call!\n");
 	thread_exit ();
 }
