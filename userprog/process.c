@@ -341,6 +341,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+ //load 함수는 ELF 형식의 실행 파일을 읽어서 현재 스레드의 가상 메모리에 로드하고, 로드된 실행 파일의 진입점을 현재 스레드의 RIP 레지스터에 저장하여 해당 프로그램을 실행하는 함수입니다.
 static bool
 load (const char *file_name, struct intr_frame *if_) {
 	struct thread *t = thread_current ();
@@ -469,6 +470,7 @@ done:
 }
 
 /* 인자를 stack에 올린다. */
+//argument_stack 함수는 load 함수에서 파싱한 인자들을 가상 메모리 상의 유저 스택에 저장하는 함수입니다. 이 함수는 파싱한 인자들을 차례대로 스택에 저장하고, 인자들의 주소값을 가리키는 포인터를 스택에 저장합니다. 이 때, 8의 배수로 스택 주소를 조정하고, NULL 값을 포함하여 스택에 저장해야하는 인자 수만큼 스택을 조작합니다. 마지막으로 가짜 리턴 주소를 스택에 저장합니다. 이렇게 저장된 유저 스택은 프로그램 실행 시 인자를 전달하기 위해 사용됩니다.
 void argument_stack(char **argv, int argc, struct intr_frame *if_) { 
 
 	/* insert arguments' address */
