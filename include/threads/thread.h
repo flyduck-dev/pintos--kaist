@@ -95,6 +95,8 @@ struct thread {
 	int64_t wake_time; 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
+	struct semaphore child_wait_sema;
+	struct process *process;            /* Process the thread belongs to. */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -110,6 +112,15 @@ struct thread {
 	unsigned magic;                     /* Detects stack overflow. */
 };
 
+struct process {
+  tid_t pid;                   /* Process ID. */
+  struct thread *parent;       /* Parent process. */
+  struct list children;        /* Child processes. */
+  bool loaded;                 /* True if process is loaded. */
+  bool exited;                 /* True if process has exited. */
+  int exit_status;             /* Exit status of the process. */
+  struct file *exec_file;      /* Executable file of the process. */
+};
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
