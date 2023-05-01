@@ -96,8 +96,12 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	//struct semaphore child_wait_sema;
+	struct list children;               /* Child threads. */
+    struct semaphore wait_sema;         /* Semaphore for waiting on child thread. */
+    bool wait_called;                   /* Whether wait() has been called on the thread. */
+    struct thread *parent;              /* Parent thread. */
 	struct process *process;            /* Process the thread belongs to. */
-
+	struct semaphore exec_sema;     // exec()을 위한 세마포어
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */

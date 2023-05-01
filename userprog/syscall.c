@@ -59,8 +59,10 @@ syscall_handler (struct intr_frame *f UNUSED) {
         //     create();
         //     break;
         // case SYS_WRITE : //3
-        //     create();
-        //     break;
+        //  check_user_memory(arg2, arg3);
+        //  arg1 = get_kernel_address(arg1);
+        //  int bytes_written = write(arg1, arg2, arg3);
+        // f->R.rax = bytes_written;
         // case SYS_SEEK : 
         //     create();
         //     break;
@@ -73,9 +75,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
         // case SYS_REMOVE : 
         //     create();
         //     break;
-        // case SYS_CREATE : 
-        //    filesys_create();
-        //     break;
+        // case SYS_CREATE :
+        //  check_address((const void*) f->R.rdi);
+        //  int initial_size = (int) f->R.rsi;
+        //  bool create_success = create((const char *) f->R.rdi, initial_size);
+        // set_syscall_return_value(create_success);
         case SYS_FORK : //시스템을 종료
 			power_off(); //void
 			break;
