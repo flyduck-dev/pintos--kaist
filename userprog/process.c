@@ -171,7 +171,11 @@ error:
  //해당 자식 프로세스에 대한 정보를 부모 프로세스의 자식 리스트에 추가해야 한다.
 int
 process_exec (void *f_name) {
-	char *file_name = f_name;
+    /*-------------------------- project.2-Parsing -----------------------------*/
+    char *file_name = f_name;
+    char *file_name_copy[48];
+    memcpy(file_name_copy, file_name, strlen(file_name) + 1);
+    /*-------------------------- project.2-Parsing -----------------------------*/
 	bool success;
 
 
@@ -186,21 +190,42 @@ process_exec (void *f_name) {
 
 	/* We first kill the current context */
 	process_cleanup ();
-
-	// Command_line_parsing
-	memset(&_if, 0, sizeof _if);
+    /*-------------------------- project.2-Parsing -----------------------------*/
+    char *token, *last;
+    int token_count = 0;
+    char *arg_list[64];
+    token = strtok_r(file_name_copy, " ", &last);
+    char *tmp_save = token;
+    arg_list[token_count] = token;
+    while (token != NULL)
+    {
+        token = strtok_r(NULL, " ", &last);
+        token_count++;
+        arg_list[token_count] = token;
+    }
+    /* And then load the binary */
+    success = load(tmp_save, &_if);
+    // /* If load failed, quit. */
+    // if (!success)
+    // {
+    //     return -1;
+    // }
+    // argument_stack(arg_list, token_count, &_if);
+    // /*-------------------------- project.2-Parsing -----------------------------*/
+	// // Command_line_parsing
+	// memset(&_if, 0, sizeof _if);
 
 	/*argv에다가 파일을 포함한 아규먼트 들을 담아서 넘겨주기*/
 
 	/* And then load the binary */
-	success = load (file_name, &_if);
+	success = load (tmp_save, &_if);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success){
 		return -1;
 	}
-
+	argument_stack(arg_list, token_count, &_if);
 	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* Start switched process. */
@@ -354,18 +379,16 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
-	char *token, *save_ptr;
-	char *argv[128]; // 파싱한 인자들을 저장할 배열
-	int argc = 0;
+	// char *token, *save_ptr;
+	// char *argv[128]; // 파싱한 인자들을 저장할 배열
+	// int argc = 0;
  
-	token = strtok_r(file_name, " ", &save_ptr); 
+	// token = strtok_r(file_name, " ", &save_ptr); 
 
-	argv[argc++] = token;
-
-	while(token!=NULL){
-		token = strtok_r (NULL, " ", &save_ptr);
-		argv[argc++] = token;
-	}
+	// while(token!=NULL){
+	// 	token = strtok_r (NULL, " ", &save_ptr);
+	// 	argv[argc++] = token;
+	// }
 
 
 	/* Allocate and activate page directory. */
@@ -463,8 +486,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	 * TODO: Implement
 	 
 	  (see project2/argument_passing.html). */
-	
-	argument_stack(argv, argc, if_);
 
 	success = true;
 
@@ -474,47 +495,41 @@ done:
 	return success;
 }
 
-/* 인자를 stack에 올린다. */
-//argument_stack 함수는 load 함수에서 파싱한 인자들을 가상 메모리 상의 유저 스택에 저장하는 함수입니다. 이 함수는 파싱한 인자들을 차례대로 스택에 저장하고, 인자들의 주소값을 가리키는 포인터를 스택에 저장합니다. 이 때, 8의 배수로 스택 주소를 조정하고, NULL 값을 포함하여 스택에 저장해야하는 인자 수만큼 스택을 조작합니다. 마지막으로 가짜 리턴 주소를 스택에 저장합니다. 이렇게 저장된 유저 스택은 프로그램 실행 시 인자를 전달하기 위해 사용됩니다.
-void argument_stack(char **argv, int argc, struct intr_frame *if_) { 
-
-	/* insert arguments' address */
-	char *arg_address[128];
-	
-	/* 맨 끝 NULL 값(arg[4]) 제외하고 스택에 저장(arg[0] ~ arg[3]) */
-	for (int i = argc-2; i>=0; i--) { 
-		int argv_len = strlen(argv[i]);
-		if_->rsp = if_->rsp - (argv_len + 1);
-		memcpy(if_->rsp, argv[i], argv_len+1);
-		arg_address[i] = if_->rsp; // arg_address 배열에 현재 문자열 시작 주소 위치를 저장한다.
-	}
-
-	/* word-align: 8의 배수 맞추기 위해 padding 삽입*/
-	while (if_->rsp % 8 != 0) 
-	{
-		if_->rsp--; // 주소값을 1 내리고
-		*(uint8_t *) if_->rsp = 0; //데이터에 0 삽입 => 8바이트 저장
-	}
-
-	/* 이제는 주소값 자체를 삽입! 이때 센티넬 포함해서 넣기*/
-	
-	for (int i = argc; i >=0; i--) 
-	{ // 여기서는 NULL 값 포인터도 같이 넣는다.
-		if_->rsp = if_->rsp - 8; // 8바이트만큼 내리고
-		if (i == argc) { // 가장 위에는 NULL이 아닌 0을 넣어야지
-			memset(if_->rsp, 0, sizeof(char **));
-		} else { // 나머지에는 arg_address 안에 들어있는 값 가져오기
-			memcpy(if_->rsp, &arg_address[i], sizeof(char **)); // char 포인터 크기: 8바이트
-		}	
-	}
-	
-
-	/* fake return address */
-	if_->rsp = if_->rsp - 8; // void 포인터도 8바이트 크기
-	memset(if_->rsp, 0, sizeof(void *));
-
-	if_->R.rdi  = argc;
-	if_->R.rsi = if_->rsp + 8; // fake_address 바로 위: arg_address 맨 앞 가리키는 주소값!
+void argument_stack(char **argv, int argc, struct intr_frame *if_)
+{
+    /* insert arguments' address */
+    char *argu_address[128];
+    for (int i = argc - 1; i >= 0; i--)
+    {
+        int argv_len = strlen(argv[i]);
+        if_->rsp = if_->rsp - (argv_len + 1);
+        memcpy(if_->rsp, argv[i], argv_len + 1);
+        argu_address[i] = if_->rsp;
+    }
+    
+    /* insert padding for word-align */
+    while (if_->rsp % 8 != 0)
+    {
+        if_->rsp--;
+        *(uint8_t *)(if_->rsp) = 0;
+    }
+    
+    /* insert address of strings including sentinel */
+    for (int i = argc; i >= 0; i--)
+    {
+        if_->rsp = if_->rsp - 8;
+        if (i == argc)
+            memset(if_->rsp, 0, sizeof(char **));
+        else
+            memcpy(if_->rsp, &argu_address[i], sizeof(char **));
+    }
+    
+    /* fake return address */
+    if_->rsp = if_->rsp - 8;
+    memset(if_->rsp, 0, sizeof(void *));
+ 
+    if_->R.rdi = argc;
+    if_->R.rsi = if_->rsp + 8;
 }
 
 

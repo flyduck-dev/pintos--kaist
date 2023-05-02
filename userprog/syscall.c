@@ -80,21 +80,22 @@ syscall_handler (struct intr_frame *f UNUSED) {
         //  int initial_size = (int) f->R.rsi;
         //  bool create_success = create((const char *) f->R.rdi, initial_size);
         // set_syscall_return_value(create_success);
-        case SYS_FORK : //시스템을 종료
-			power_off(); //void
-			break;
-		case SYS_HALT : //시스템을 종료
-			halt();  //void
-			break;
-		case SYS_WAIT:
-            thread_exit((int)f->R.rdi);
-            break;
-        case SYS_EXIT: //현재 실행 중인 프로세스를 종료
-            exit((int)f->R.rdi);
-            break;
-		case SYS_EXEC :
-			exec(); //1
-			break;
+        // case SYS_FORK : //시스템을 종료
+		// 	power_off(); //void
+		// 	break;
+		// case SYS_HALT : //시스템을 종료
+		// 	halt();  //void
+		// 	break;
+		// case SYS_WAIT:
+        //     process_wait();
+        //     thread_exit((int)f->R.rdi);
+        //     break;
+        // case SYS_EXIT: //현재 실행 중인 프로세스를 종료
+        //     exit((int)f->R.rdi);
+        //     break;
+		// case SYS_EXEC :
+		// 	exec(); //1
+		// 	break;
         // case SYS_WRITE:
         //     check_user_memory(arg2, arg3);
         //     arg1 = get_kernel_address(arg1);
@@ -104,7 +105,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
         // 다른 시스템 콜 처리 작업
         // ...
         default:
-            printf("Unhandled system call!\n");
+            printf("system call!\n");
             thread_exit();
     }
 

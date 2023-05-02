@@ -11,6 +11,7 @@ static long long page_fault_cnt;
 
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
+static bool is_valid_user_address(const void *ptr);
 
 /* Registers handlers for interrupts that can be caused by user
    programs.
@@ -134,6 +135,11 @@ page_fault (struct intr_frame *f) {
 	   be assured of reading CR2 before it changed). */
 	intr_enable ();
 
+    if (!is_valid_user_address(fault_addr)) {
+        printf("Page fault at %p: invalid user address.\n", fault_addr);
+        kill(f);
+        return;
+    }
 
 	/* Determine cause. */
 	not_present = (f->error_code & PF_P) == 0;
@@ -159,23 +165,38 @@ page_fault (struct intr_frame *f) {
 }
 
 /* Check if user pointer is valid. */
-static bool is_valid_user_address(const void *ptr) {
-    if (ptr == NULL || ptr >= PHYS_BASE)
-        return false;
-    return pml4_get_page(thread_current()->pml4, ptr) != NULL;
-}
+//주어진 포인터 ptr이 유효한 유저 가상 주소인지를 판별하는 함수
+static bool is_valid_user_address(const void *ptr) { //is_kernel_vaddr(ptr) is_user_vaddr(vaddr)
+    if (ptr == NULL || is_kernel_vaddr(ptr)) //ptr >= KERN_BASE //ptr이 NULL 포인터인지 또는 커널 가상 주소인지를 is_kernel_vaddr() 함수를 사용하여 확인
+         return false;
+	return pml4_get_page(thread_current()->pml4, ptr) != NULL; //pml4_get_page() 함수를 사용하여 해당 포인터의 페이지 테이블 엔트리(PTE)가 존재하는지를 확인
+} //존재하면 유효한 유저 가상 주소이므로 true를 반환하고, 그렇지 않은 경우에는 false를 반환
+/* Returns true if 'ptr' is a valid user address, false otherwise. */
+// static bool
+// is_valid_user_address (const void *ptr)
+// {
+//   if (ptr == NULL || is_kernel_vaddr (ptr))
+//     return false;
 
+//   void *fault_addr = pg_round_down (ptr);
+//   return pagedir_get_page (thread_current ()->pagedir, fault_addr) != NULL;
+// }
+// pagedir_get_page 함수는 페이지 디렉토리(PD)를 기반으로 주어진 포인터에 대한 페이지 테이블 엔트리(PTE)를 반환합니다. 하지만, pagedir_get_page 함수는 32비트 주소 공간에서만 동작하므로, 64비트 주소 공간을 다루는 프로젝트에서는 사용할 수 없습니다.
+
+// 따라서, Pintos 프로젝트에서는 64비트 주소 공간을 다루기 위해 pml4_get_page 함수를 사용합니다. 이 함수는 페이지 맵 레벨 4(PML4)을 기반으로 주어진 포인터에 대한 페이지 테이블 엔트리(PTE)를 반환합니다. 따라서, 64비트 주소 공간을 다루는 프로젝트에서는 pml4_get_page 함수를 사용해야 합니다.
+
+// 그러나, 만약 32비트 주소 공간에서 작업을 한다면 pagedir_get_page 함수를 사용할 수 있습니다.
 /* Check if user buffer is valid. */
-static bool is_valid_user_buffer(const void *buffer, unsigned size) {
-    const char *p = (const char*) buffer;
-    for (unsigned i = 0; i < size; ++i)
-        if (!is_valid_user_address(p + i))
-            return false;
-    return true;
-}
+// static bool is_valid_user_buffer(const void *buffer, unsigned size) {
+//     const char *p = (const char*) buffer;
+//     for (unsigned i = 0; i < size; ++i)
+//         if (!is_valid_user_address(p + i))
+//             return false;
+//     return true;
+// }
 
-/* Check if address is in user memory. */
-static void check_address(const void *addr) {
-    if (!is_valid_user_address(addr))
-        syscall_exit(-1);
-}
+// /* Check if address is in user memory. */
+// static void check_address(const void *addr) {
+//     if (!is_valid_user_address(addr))
+//         syscall_exit(-1);
+// }
