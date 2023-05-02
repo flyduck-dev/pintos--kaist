@@ -93,18 +93,20 @@ struct thread {
 	int priority;                       /* Priority. */
 	int origin_priority;                       /* Origin - Priority. */
 	int64_t wake_time; 
+	int exit_status;
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	//struct semaphore child_wait_sema;
-	struct list children;               /* Child threads. */
-    struct semaphore wait_sema;         /* Semaphore for waiting on child thread. */
+	struct list child_list;               /* Child threads. */
+	struct list_elem child_elem;
+    //struct semaphore wait_sema;         /* Semaphore for waiting on child thread. */
     bool wait_called;                   /* Whether wait() has been called on the thread. */
     struct thread *parent;              /* Parent thread. */
-	struct process *process;            /* Process the thread belongs to. */
-	struct semaphore exec_sema;     // exec()을 위한 세마포어
+	//struct semaphore exec_sema;     // exec()을 위한 세마포어
+	//struct semaphore child_sema;
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
-	uint64_t *pml4;                     /* Page map level 4 */
+	uint64_t *pml4; /* Page map level 4 */ // "Page Map Level 4"를 가리키며, x86 아키텍처에서는 이 변수를 사용하여 프로세스의 페이지 테이블을 가리킵니다.
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */

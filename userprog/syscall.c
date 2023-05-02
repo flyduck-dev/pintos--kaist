@@ -45,6 +45,9 @@ void
 syscall_handler (struct intr_frame *f UNUSED) {
 	/* Get the system call number. */
 	int syscall_number = (int) f->R.rax;
+    if (is_kernel_vaddr(syscall_number)) {
+        exit(-1);
+    } 
 	// TODO: Your implementation goes here.
 	    // 현재 실행 중인 쓰레드의 상태를 커널 스택에 저장
     //push(thread_current()->kernel_esp);

@@ -122,12 +122,16 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
  * Hint) parent->tf does not hold the userland context of the process.
  *       That is, you are required to pass second argument of process_fork to
  *       this function. */
+ // 부모 프로세스의 실행 컨텍스트를 복사하는 쓰레드 함수입니다.
+ //힌트) parent->tf는 프로세스의 유저 랜드 컨텍스트를 보유하지 않습니다.
+ //따라서, 이 함수에 process_fork의 두 번째 인자를 전달해야 합니다. */
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
 	struct thread *parent = (struct thread *) aux;
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
+	/* TODO: 부모 프로세스의 if_를 어떻게 전달할 지 결정해야 합니다. (예: process_fork()의 if_ 인자 사용) */
 	struct intr_frame *parent_if;
 	bool succ = true;
 
