@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -95,6 +96,22 @@ struct thread {
 	int64_t wake_time; 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
+	// project 2 : system call
+    struct file **fd_table; // file descriptor table의 시작주소 가리키게 초기화
+    int fd_idx;                // fd table에 open spot의 index
+	struct intr_frame parent_if;
+    struct semaphore fork_sema; // fork한 child의 load를 기다리는 용도
+
+    struct list child_list; // parent가 가진 child_list
+    struct list_elem child_elem;
+
+    struct semaphore wait_sema;
+    struct semaphore free_sema;
+	int exit_status;
+    struct file *running;
+
+    int stdin_count; 
+    int stdout_count;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -147,5 +164,9 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 bool value_more(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 void compare_priority_ready_with_run();
+
+// project2
+#define FDT_PAGES 3
+#define FDCOUNT_LIMIT FDT_PAGES *(1 << 9) 
 //compare_thread_priority
 #endif /* threads/thread.h */
