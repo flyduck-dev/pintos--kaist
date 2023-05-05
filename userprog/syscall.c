@@ -1,16 +1,46 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include <list.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/loader.h"
-#include "userprog/gdt.h"
+#include "threads/palloc.h"
 #include "threads/flags.h"
+#include "threads/vaddr.h"
+#include "threads/synch.h"
+#include "userprog/gdt.h"
+#include "userprog/process.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
 #include "intrinsic.h"
+#include "threads/init.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+// 제작 함수
+// void check_address(void *addr);
+// struct page * check_address(void *addr); 
+// int add_file_to_fdt(struct file *file);
+// void remove_file_from_fdt(int fd);
+// static struct file *find_file_by_fd(int fd);
 
+typedef int pid_t;
+
+// void halt(void);
+ void exit(int status);
+// tid_t fork(const char *thread_name, struct intr_frame *f);
+// pid_t exec (const char *cmd_lime);
+int wait (pid_t pid); 
+// bool create(const char *file, unsigned initial_size);
+// bool remove(const char *file);
+// int open(const char *file);
+// int filesize(int fd);
+// int read(int fd, void *buffer, unsigned size);
+ int write(int fd, const void *buffer, unsigned size);
+// void seek(int fd, unsigned position);
+// unsigned tell(int fd);
+// void close(int fd);
 /* System call.
  *
  * Previously system call services was handled by the interrupt handler
@@ -37,83 +67,91 @@ syscall_init (void) {
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 }
 
-/* The main system call interface */
-//유저 스택에 접근하기 위해서는, if_->rsp를 사용합니다. rsp는 "stack pointer"의 약자로, 현재 스택 프레임의 맨 위 주소를 가리키는 레지스터입니다. if_->rsp는 현재 스택 프레임에서 유저 스택의 맨 위 주소를 가리키게 됩니다. 따라서 이 코드에서 유저 스택에 데이터를 저장하거나 로드할 때는 if_->rsp를 사용하여 주소를 계산하면 됩니다.
-//f->rsp는 현재 스택 프레임에서 유저 스택의 맨 위 주소
-//유저 스택에 접근하기 위해서는 f->rsp를 사용하여 주소를 계산할 수 있습니다.
+void check_address(void *addr)
+{
+    // kernel VM 못가게, 할당된 page가 존재하도록(빈공간접근 못하게)
+    struct thread *cur = thread_current();
+    if (is_kernel_vaddr(addr) || pml4_get_page(cur->pml4, addr) == NULL)
+    {
+        exit(-1);
+    }
+}
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	/* Get the system call number. */
 	int syscall_number = (int) f->R.rax;
-    if (is_kernel_vaddr(syscall_number)) {
-        exit(-1);
-    } 
+	//printf("syscall num : \n\n\n%d\n\n\n", syscall_number);
 	// TODO: Your implementation goes here.
 	    // 현재 실행 중인 쓰레드의 상태를 커널 스택에 저장
     //push(thread_current()->kernel_esp);
     switch (syscall_number){
-        // case SYS_TELL : //1
-        //     create();
-        //     break;
-        // case SYS_CLOSE :  //1
-        //     create();
-        //     break;
-        // case SYS_READ :  //3
-        //     create();
-        //     break;
-        // case SYS_WRITE : //3
-        //  check_user_memory(arg2, arg3);
-        //  arg1 = get_kernel_address(arg1);
-        //  int bytes_written = write(arg1, arg2, arg3);
-        // f->R.rax = bytes_written;
-        // case SYS_SEEK : 
-        //     create();
-        //     break;
-        // case SYS_OPEN : 
-        //     create();
-        //     break;
-        // case SYS_FILESIZE : 
-        //     create();
-        //     break;
-        // case SYS_REMOVE : 
-        //     create();
-        //     break;
-        // case SYS_CREATE :
-        //  check_address((const void*) f->R.rdi);
-        //  int initial_size = (int) f->R.rsi;
-        //  bool create_success = create((const char *) f->R.rdi, initial_size);
-        // set_syscall_return_value(create_success);
-        // case SYS_FORK : //시스템을 종료
-		// 	power_off(); //void
+		case SYS_HALT: // 0 개
+			power_off();
+      		break;
+    	case SYS_EXIT: // 1개
+			exit(f->R.rdi);
+			NOT_REACHED();
+      		break;
+		case SYS_FORK: // 1개
+      		break;
+    	case SYS_EXEC: // 1개
+      		break;
+    	case SYS_WAIT: // 1개
+			f->R.rax = process_wait(f->R.rdi);
+      		break;
+    	case SYS_CREATE: // 2개
+      		break;
+    	case SYS_REMOVE: // 1개
+      		break; 
+    	case SYS_OPEN: // 1개
+      		break;
+    	case SYS_FILESIZE: // 1개
+      		break;
+    	case SYS_READ: // 3개
+      		break;
+    	case SYS_WRITE: // 3개
+			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
+			//write((int)*(uint32_t *)(f->esp+4), (void *)*(uint32_t *)(f->esp + 8), (unsigned)*((uint32_t *)(f->esp + 12)));
+      		break;
+    	case SYS_SEEK: // 2개
+      		break;
+    	case SYS_TELL: // 1개
+      		break;
+    	case SYS_CLOSE: // 1개
+      		break;
+		// case SYS_CREATE: 
+		// 	//check_address(f->R.rdi);
+		// 	//f->R.rax = create(f->R.rdi, f->R.rsi);
 		// 	break;
-		// case SYS_HALT : //시스템을 종료
-		// 	halt();  //void
+		// case SYS_EXIT:
+		// 	exit(f->R.rdi);
 		// 	break;
-		// case SYS_WAIT:
-        //     process_wait();
-        //     thread_exit((int)f->R.rdi);
-        //     break;
-        // case SYS_EXIT: //현재 실행 중인 프로세스를 종료
-        //     exit((int)f->R.rdi);
-        //     break;
-		// case SYS_EXEC :
-		// 	exec(); //1
+		// case SYS_HALT:
+		// 	//halt();
 		// 	break;
-        // case SYS_WRITE:
-        //     check_user_memory(arg2, arg3);
-        //     arg1 = get_kernel_address(arg1);
-        //     int bytes_written = write(arg1, arg2, arg3);
-        //     set_syscall_return_value(bytes_written);
-        //     break;
-        // 다른 시스템 콜 처리 작업
-        // ...
+		// case SYS_WRITE:                  /* Write to a file. */
+        //     if(f->R.rdi == 1){
+        //         printf("%s", f->R.rsi);
+        //     }
+        //    break;
         default:
             printf("system call!\n");
             thread_exit();
     }
+}
 
-    // // 저장된 현재 쓰레드의 상태를 로드하여 다시 해당 쓰레드를 실행
-    // thread_current()->kernel_esp = pop();
-	printf ("system call!\n");
-	thread_exit ();
+void exit (int status) {
+	struct thread *cur = thread_current();
+	cur->exit_status = status;
+	printf("%s: exit(%d)\n", thread_name(), status);
+  	thread_exit ();
+}
+
+int write (int fd, const void *buffer, unsigned size) {
+	check_address(buffer);
+  	if (fd == 1) {
+    putbuf(buffer, size);
+    return size;
+  }
+  return -1; 
 }
