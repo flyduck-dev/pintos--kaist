@@ -222,7 +222,7 @@ process_exec (void *f_name) {
 	/*argv에다가 파일을 포함한 아규먼트 들을 담아서 넘겨주기*/
 
 	/* And then load the binary */
-	success = load (tmp_save, &_if);
+	//success = load (tmp_save, &_if);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -230,7 +230,7 @@ process_exec (void *f_name) {
 		return -1;
 	}
 	argument_stack(arg_list, token_count, &_if);
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	//hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -252,7 +252,7 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	while (1)
+	for(int i=0; i<100000000; i++)
 	{
 		;
 	}

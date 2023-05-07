@@ -104,8 +104,8 @@ struct thread {
     struct thread *parent;              /* Parent thread. */
 	struct file **fdt; //fd_table; /* 파일 디스크립터 테이블 */
 	int next_fd;
-	struct semaphore wait_sema;
-    struct semaphore destroy_sema;
+	//struct semaphore wait_sema;
+    //truct semaphore destroy_sema;
 	//struct semaphore exec_sema;     // exec()을 위한 세마포어
 	//struct semaphore child_sema;
 #ifdef USERPROG
@@ -132,7 +132,7 @@ struct process {
   struct file *exec_file;      /* Executable file of the process. */
 };
 
-struct lock filesys_lock; /* 파일 시스템 락 */
+//struct lock filesys_lock; /* 파일 시스템 락 */
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
