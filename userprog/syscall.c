@@ -34,6 +34,7 @@ void syscall_handler (struct intr_frame *);
 
 void
 syscall_init (void) {
+	lock_init(&filesys_lock);
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
@@ -71,7 +72,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			f->R.rax = process_wait(f->R.rdi);
       		break;
     	case SYS_CREATE: // 2개
-			//f->R.rax = create(f->R.rdi, f->R.rsi);
+			f->R.rax = create(f->R.rdi, f->R.rsi);
       		break;
     	case SYS_REMOVE: // 1개
 			//f->R.rax = remove(f->R.rdi);
@@ -126,4 +127,16 @@ void check_address(void *addr)
 	{
 		exit(-1);
 	}
+}
+
+bool create (const char *file, unsigned initial_size) {
+	if (file == NULL) {
+      exit(-1);
+  	} 
+	bool return_code;
+	check_address(file);
+	lock_acquire(&filesys_lock);
+  	return_code = filesys_create(file, initial_size);
+	lock_release (&filesys_lock);
+    return return_code;
 }
