@@ -9,7 +9,9 @@
 #ifdef VM
 #include "vm/vm.h"
 #endif
+#define FDT_PAGES 3                       // pages to allocate for file descriptor tables (thread_create, process_exit)
 
+#define FDCOUNT_LIMIT FDT_PAGES *(1 << 9) // Limit fdIdx
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -100,6 +102,8 @@ struct thread {
 	struct list_elem donation_elem;
 	int init_priority;
 #ifdef USERPROG
+	struct file** fd_table;
+	int fd_idx;
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 #endif

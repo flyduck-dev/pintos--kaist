@@ -267,7 +267,7 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
+	palloc_free_multiple(curr->fd_table, FDT_PAGES);
 	process_cleanup ();
 }
 

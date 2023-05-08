@@ -63,10 +63,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
             //f->R.rax = fork(f->R.rdi, f);
       		break;
     	case SYS_EXEC: // 1개
-			//exec(f->R.rdi);
-      		//if (exec(f->R.rdi) == -1) {
-			//	exit(-1);
-			//}
+			if (exec(f->R.rdi) == -1) {
+				exit(-1);
+			}
             break;
     	case SYS_WAIT: // 1개
 			f->R.rax = process_wait(f->R.rdi);
@@ -78,13 +77,13 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			//f->R.rax = remove(f->R.rdi);
       		break; 
     	case SYS_OPEN: // 1개
-			//f->R.rax = open(f->R.rdi);
+			f->R.rax = open(f->R.rdi);
       		break;
     	case SYS_FILESIZE: // 1개
 			//f->R.rax = filesize(f->R.rdi);
       		break;
     	case SYS_READ: // 3개
-			//f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
+			f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
       		break;
     	case SYS_WRITE: // 3개
 			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
@@ -110,15 +109,6 @@ void exit (int status) {
   	thread_exit ();
 }
 
-int write(int fd, const void *buffer, unsigned size) {
-	check_address(buffer);
-	if (fd == 0) return -1;
-	if (fd == 1) {
-		putbuf(buffer, size);  // 표준출력을 처리하는 함수 putbuf()
-		return size;
-	} 
-}
-
 void check_address(void *addr)
 {
 	// kernel VM 못가게, 할당된 page가 존재하도록(빈공간접근 못하게)
@@ -139,4 +129,116 @@ bool create (const char *file, unsigned initial_size) {
   	return_code = filesys_create(file, initial_size);
 	lock_release (&filesys_lock);
     return return_code;
+}
+
+void remove_file_from_fdt(int fd)
+{
+	struct thread *cur = thread_current();
+
+	// if invalid fd
+	if (fd < 0 || fd >= FDCOUNT_LIMIT){
+		return;
+	}
+	cur->fd_table[fd] = NULL;
+}
+
+int process_add_file (struct file *f)
+{
+	struct thread *cur = thread_current();
+	struct file **fdt = cur->fd_table;
+
+	while (cur->fd_idx < FDCOUNT_LIMIT && fdt[cur->fd_idx]) {
+		cur->fd_idx++;
+	}	
+	if (cur->fd_idx >= FDCOUNT_LIMIT) {
+		return -1;
+	}
+	fdt[cur->fd_idx] = f;
+	return cur->fd_idx;
+}
+
+struct file *process_get_file(int fd) {
+	struct thread *cur = thread_current();
+	if (fd < 0 || fd >= FDCOUNT_LIMIT) {
+		return NULL;
+	}
+	return cur->fd_table[fd];
+}
+
+//open은 문자열로 주어진 파일명 file 에 해당하는 파일을 열어주는 함수
+int open (const char *file) {
+    if (file == NULL) exit(-1);
+    check_address(file);
+    struct file* open_file = filesys_open(file);
+    if (open_file == NULL) {
+        return -1; 
+    }
+    int fd = process_add_file(open_file);
+    // fd table 가득 찼다면
+    if (fd == -1) file_close(open_file);
+    return fd;
+}
+
+int read (int fd, void* buffer, unsigned size) {
+    check_address(buffer);
+    int readsize;
+	struct thread *cur = thread_current();
+    struct file *f = process_get_file(fd);
+
+    if (f == NULL) return -1;
+    if (f == 1) return -1;
+    // fd가 STDIN에 해당하는 경우엔 input_getc()를 통해 최대 size만큼의 바이트를 읽어주고, 실제로 읽어들이는데 성공한 크기를 readsize로 리턴
+    if (fd == 0) {
+		unsigned char *buf = buffer;
+        for (readsize = 0; readsize < size; readsize++) {
+            char c = input_getc();
+            *buf++ = c;
+            if (c == '\0')
+                break;   
+        }   
+    } 
+    // fd가 일반 파일에 해당하는 경우엔, filesys_lock 을 활용해 파일을 안전하게 읽어들이도록 한다.
+    else {
+        lock_acquire(&filesys_lock);
+        readsize = file_read(f, buffer, size);
+        lock_release(&filesys_lock);
+    }
+    return readsize;
+}
+
+int write(int fd, const void *buffer, unsigned size) {
+	check_address(buffer);
+	struct file *file = process_get_file(fd);
+	int writesize;
+	if (file == NULL) return -1;
+	if (fd == 0) writesize = -1;
+	if (fd == 1) {
+		putbuf(buffer, size);  // 표준출력을 처리하는 함수 putbuf()
+		writesize = size;
+	} 
+	else {
+		lock_acquire(&filesys_lock);
+		writesize = file_write(file, buffer, size);
+		lock_release(&filesys_lock);
+	}
+	return writesize;
+}
+
+int exec(const char *file_name){
+	// process_exec(cmd_line);
+    check_address(file_name);
+
+	int file_size = strlen(file_name)+1;
+	char *fn_copy = palloc_get_page(PAL_ZERO);
+	if (fn_copy == NULL) {
+		exit(-1);
+	}
+	strlcpy(fn_copy, file_name, file_size);
+
+	if (process_exec(fn_copy) == -1) {
+		return -1;
+	}
+
+	NOT_REACHED();
+	return 0;
 }
